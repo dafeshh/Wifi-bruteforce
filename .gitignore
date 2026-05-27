@@ -1,0 +1,15 @@
+__pycache__/
+*.pyc
+
+venv/
+.venv/
+
+capture.pcapng
+fixed.cap
+hash.22000
+pass.txt
+
+*.cap
+*.pcap
+*.pcapng
+*.22000
