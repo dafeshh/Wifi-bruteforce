@@ -71,6 +71,7 @@ def build_info_markup(
     crack=None,
     input_mode="COMMAND",
     pending_target_id=None,
+    saved_wordlist=None,
 ):
     if crack is None:
         crack = {}
@@ -94,7 +95,9 @@ def build_info_markup(
     else:
         status_line = f"[dim]{crack_status}[/dim]"
 
-    if input_mode == "WORDLIST":
+    if input_mode == "NEW_WORDLIST":
+        mode_line = "[#ff2d78]Waiting new wordlist path...[/#ff2d78]"
+    elif input_mode == "WORDLIST":
         mode_line = "[#ff2d78]Waiting wordlist path...[/#ff2d78]"
     elif input_mode == "TARGET_ID":
         mode_line = "[#ff2d78]Waiting target ID...[/#ff2d78]"
@@ -117,6 +120,7 @@ def build_info_markup(
         f"[bold dim]──────────────────────────────────[/bold dim]\n\n"
 
         f"[bold #00ffcc]▸ COMMAND[/bold #00ffcc]\n"
+        f"  [#ff2d78]new[/#ff2d78]   [dim]set wordlist[/dim]\n"
         f"  [#ff2d78]crack[/#ff2d78] [dim]start crack[/dim]\n"
         f"  [#ff2d78]out[/#ff2d78]   [dim]save pass.txt[/dim]\n"
         f"  [#ff2d78]stop[/#ff2d78]  [dim]stop crack[/dim]\n\n"
@@ -128,6 +132,7 @@ def build_info_markup(
         f"  {status_line}\n"
         f"  [dim]id:[/dim] [#c8fff4]{crack_target_id or pending_target_id or 'None'}[/#c8fff4]\n"
         f"  [dim]wordlist:[/dim] [#c8fff4]{short_path(crack_wordlist)}[/#c8fff4]\n"
+        f"  [dim]saved:[/dim] [#c8fff4]{short_path(saved_wordlist)}[/#c8fff4]\n"
         f"  [dim]password:[/dim] [#00ff88]{crack_password or 'None'}[/#00ff88]\n"
     )
 
@@ -325,7 +330,9 @@ class WifiTUI(App):
         self.input_mode = "COMMAND"
         self.pending_wordlist = None
         self.pending_target_id = None
+        self.saved_wordlist = None
 
+        
     def compose(self) -> ComposeResult:
         with Horizontal(id="topbar-wrap"):
             yield Static(
@@ -342,6 +349,7 @@ class WifiTUI(App):
             "[#ff2d78]crack[/#ff2d78] start    "
             "[#ff2d78]stop[/#ff2d78] stop    "
             "[#ff2d78]out[/#ff2d78] save    "
+            "[#ff2d78]new[/#ff2d78] wordlist    "
             "[dim]──[/dim]    "
             "[dim]interval: 1s[/dim]",
             id="footbar",
@@ -359,6 +367,7 @@ class WifiTUI(App):
                         get_crack_snapshot(self.state),
                         self.input_mode,
                         self.pending_target_id,
+                        self.saved_wordlist,
                     ),
                     id="info",
                 )
@@ -406,6 +415,7 @@ class WifiTUI(App):
                     crack,
                     self.input_mode,
                     self.pending_target_id,
+                    self.saved_wordlist,
                 )
             )
 
@@ -512,45 +522,78 @@ class WifiTUI(App):
             self.refresh_info_panel()
             return
 
-        if self.input_mode == "WORDLIST":
+        if low == "new":
+            self.input_mode = "NEW_WORDLIST"
+            self.pending_wordlist = None
+            self.pending_target_id = None
+            self.input_widget.placeholder = "› enter new wordlist path…"
+            self.refresh_info_panel()
+            return
+
+        if self.input_mode == "NEW_WORDLIST":
             if not cmd:
                 self.input_widget.placeholder = "› wordlist path cannot be empty…"
                 return
 
+            self.saved_wordlist = cmd
             self.pending_wordlist = cmd
-
-            start_func = self.state.get("start_crack")
-            if start_func:
-                start_func(self.pending_wordlist)
-
-            self.input_mode = "TARGET_ID"
-            self.input_widget.placeholder = "› enter target network ID…"
-
+            self.input_mode = "COMMAND"
+            self.input_widget.placeholder = "› type command…"
             self.refresh_info_panel()
             return
 
+        if self.input_mode == "WORDLIST":
+            if not cmd:
+                self.input_widget.placeholder = "› wordlist path cannot be empty…"
+                return
+    
+            self.saved_wordlist = cmd
+            self.pending_wordlist = cmd
+    
+            start_func = self.state.get("start_crack")
+            if start_func:
+                start_func(self.pending_wordlist)
+    
+            self.input_mode = "TARGET_ID"
+            self.input_widget.placeholder = "› enter target network ID…"
+    
+            self.refresh_info_panel()
+            return
+    
         if self.input_mode == "TARGET_ID":
             if not cmd:
                 self.input_widget.placeholder = "› target id cannot be empty…"
                 return
-
+    
             self.pending_target_id = cmd
-
+    
             send_id_func = self.state.get("send_crack_id")
             if send_id_func:
                 send_id_func(self.pending_target_id)
-
+    
             self.reset_command_mode()
             return
-
+    
         if low == "crack":
+            if self.saved_wordlist:
+                self.pending_wordlist = self.saved_wordlist
+    
+                start_func = self.state.get("start_crack")
+                if start_func:
+                    start_func(self.pending_wordlist)
+    
+                self.input_mode = "TARGET_ID"
+                self.input_widget.placeholder = "› enter target network ID…"
+                self.refresh_info_panel()
+                return
+    
             self.input_mode = "WORDLIST"
             self.pending_wordlist = None
             self.pending_target_id = None
             self.input_widget.placeholder = "› enter wordlist path…"
             self.refresh_info_panel()
             return
-
+    
         self.refresh_networks()
 
     def action_quit_app(self):

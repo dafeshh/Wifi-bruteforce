@@ -6,6 +6,8 @@ Author: dafeshh
 Version: BETA  
 License: MIT  
 
+![preview](asserts/review.webp)
+
 > For educational and authorized testing only.
 
 ## Requirements
@@ -83,6 +85,28 @@ hash.22000       Hash file from hcxpcapngtool
 pass.txt         Saved cracked passwords
 ```
 
+## Demo
+<table>
+  <tr>
+    <th>run without -f <br><code>python Wifiv2.py -i wlan0 -m --ask-sudo</code></th>
+    <th>run with -f <br><code>python Wifiv2.py -i wlan0 -m --ask-sudo -f</code></th>
+  </tr>
+  <tr>
+    <td>
+      <img src="asserts/normal_mode.jpg" width="100%">
+    </td>
+    <td>
+      <img src="asserts/filter_mode.jpg" width="100%">
+    </td>
+  </tr>
+  <tr>
+    <td colspan="2" align="center">
+      <h3>Crack Demo</h3>
+      <img src="asserts/demo.webp" width="100%">
+    </td>
+  </tr>
+</table>
+
 ## License
 
-This project is licensed under the MIT License.
+This project is licensed under the [MIT License](./LICENSE).
